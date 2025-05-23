@@ -7,15 +7,20 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.example.aikitsdk.AIKitSDK;
 import com.example.aikitsdk.AIKitSDKParam;
 import com.example.aikitsdk.RecognitionCallback;
 
+import java.util.Locale;
+
 public class MainActivity extends AppCompatActivity {
 
     private final String TAG = "MainActivity";
+    private TextToSpeech textToSpeech;
+    private boolean isTTSInit = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
         AIKitSDK.getInstance().setIVWCallback(new RecognitionCallback() {
             @Override
             public void onResult(String result) {
-
+                if (result.equals("你好测试")) {
+                    textToSpeech.speak("我在", TextToSpeech.QUEUE_FLUSH, null);
+                }
             }
 
             @Override
@@ -55,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResult(String result) {
                 if (result.contains("打开空调") || result.contains("关闭空调")) {
-                    Log.i(TAG, "已识别");
+                    textToSpeech.speak("已识别", TextToSpeech.QUEUE_FLUSH, null);
                 }
             }
 
@@ -138,9 +145,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void initTTS() {
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int i) {
+                if (i == TextToSpeech.SUCCESS) {
+                    textToSpeech.setPitch(0.5f);
+                    textToSpeech.setSpeechRate(0.5f);
+                    int result = textToSpeech.setLanguage(Locale.CHINA);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.w(TAG, "TTS不支持当前语言!");
+                    } else {
+                        isTTSInit = true;
+                        Log.i(TAG, "TTS初始化成功!");
+                    }
+                } else {
+                    Log.w(TAG, "TTS初始化失败!");
+                }
+            }
+        });
+    }
+
+    private void unInitTTS() {
+        if (isTTSInit) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+            textToSpeech = null;
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unInitTTS();
         unInitAudio();
         AIKitSDK.getInstance().unInit();
     }
