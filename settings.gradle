@@ -1,3 +1,4 @@
 rootProject.name = "AIKitSDK"
 include ':app'
 include ':aikitsdk'
+include ':demo'
