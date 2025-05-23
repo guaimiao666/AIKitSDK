@@ -1,22 +1,19 @@
 package com.example.aikitsdk;
 
 import android.content.Context;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
 
 import com.iflytek.aikit.core.AiHelper;
 import com.iflytek.aikit.core.AiStatus;
 import com.iflytek.aikit.core.BaseLibrary;
 import com.iflytek.aikit.core.CoreListener;
+import com.iflytek.aikit.core.LogLvl;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AIKitSDK {
@@ -41,7 +38,6 @@ public class AIKitSDK {
      * @param context  上下文
      * @param sdkParam SDK参数
      */
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public void initSDK(Context context, AIKitSDKParam sdkParam) {
         this.context = context;
         this.sdkParam = sdkParam;
@@ -50,6 +46,7 @@ public class AIKitSDK {
             return;
         }
         if (TextUtils.isEmpty(sdkParam.getWorkDir())) {
+            Log.w(TAG, "工作目录路径为空!");
             return;
         }
         createWorkDir(sdkParam.getWorkDir());
@@ -57,18 +54,13 @@ public class AIKitSDK {
         initSDK_(sdkParam.getAppId(), sdkParam.getApikey(), sdkParam.getApiSecret(), sdkParam.getWorkDir(), sdkParam.getAbilities());
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void initSDK_(String appId, String apikey, String apiSecret, String workDir, String[] abilities) {
         if (abilities == null || abilities.length == 0) {
             Log.w(TAG, "能力数组为空!");
             return;
         }
-        StringJoiner stringJoiner = new StringJoiner(";");
-        for (String ability : abilities) {
-            stringJoiner.add(ability);
-        }
-        String abilityStr = stringJoiner.toString();
-//        AiHelper.getInst().setLogInfo(LogLvl.VERBOSE, 1, "/sdcard/iflytek/aikit/aeeLog.txt");
+        String abilityStr = Utils.getAbilityStr(abilities);
+        AiHelper.getInst().setLogInfo(LogLvl.VERBOSE, 1, workDir + "/aeeLog.txt");
         //设定初始化参数
         //能力id列表 唤醒：e867a88f2  合成e2e44feff  命令词e75f07b62  合成轻量版ece9d3c90
         BaseLibrary.Params params = BaseLibrary.Params.builder()
@@ -141,6 +133,19 @@ public class AIKitSDK {
             IVWHelper.getInstance().write(data, status);
         } else {
             ESRHelper.getInstance().write(data, status);
+        }
+    }
+
+    /**
+     * 写入音频数据
+     *
+     * @param data   音频数据
+     */
+    public void writeAudioData(byte[] data) {
+        if (!canWriteEsr.get()) {
+            IVWHelper.getInstance().write(data, AiStatus.BEGIN);
+        } else {
+            ESRHelper.getInstance().write(data, AiStatus.BEGIN);
         }
     }
 
@@ -221,8 +226,8 @@ public class AIKitSDK {
      */
     public void unInit() {
         isInit.set(false);
-        IVWHelper.getInstance().end();
-        ESRHelper.getInstance().end();
+        IVWHelper.getInstance().unInit();
+        ESRHelper.getInstance().unInit();
         AiHelper.getInst().unInit();
     }
 

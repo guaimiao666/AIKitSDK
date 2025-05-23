@@ -19,4 +19,6 @@ public interface Helper {
 
     void setCallback(RecognitionCallback callback);
 
+    void unInit();
+
 }

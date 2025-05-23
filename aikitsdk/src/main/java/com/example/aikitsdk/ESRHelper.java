@@ -52,7 +52,7 @@ public class ESRHelper implements Helper{
 
     @Override
     public void start() {
-        unLoadData();
+//        unLoadData();
         if (!isLoadData) {//加载个性化资源至缓存。个性化资源如果没有变动的话，仅需加载一次，不用每次start都去加载。如果变动了则需要先卸载(调用unLoadData)，再重新加载
             /*****
              * FSA:fsa命令词文件
@@ -130,6 +130,13 @@ public class ESRHelper implements Helper{
         } else {
             Log.w(TAG, "write失败! ret:" + ret);
         }
+    }
+
+    @Override
+    public void unInit() {
+        unLoadData();
+        unInitEngine();
+        end();
     }
 
     /**
@@ -228,6 +235,22 @@ public class ESRHelper implements Helper{
             }
             Log.i(TAG, "引擎初始化成功! ret:" + ret);
             engineInit = true;
+        }
+    }
+
+    /**
+     * 引擎卸载
+     */
+    public void unInitEngine() {
+        int ret = 0;
+        if (engineInit) {
+            ret = AiHelper.getInst().engineUnInit(ABILITYID);
+            if (ret != 0) {
+                Log.w(TAG, "引擎卸载失败! ret:" + ret);
+                return;
+            }
+            Log.i(TAG, "引擎卸载成功! ret:" + ret);
+            engineInit = false;
         }
     }
 }

@@ -21,6 +21,8 @@ public class IVWHelper implements Helper {
     private RecognitionCallback callback;
     private AiHandle aiHandle;
     private boolean bReady = false;
+    private boolean isLoadData;
+    private int index = 0;
 
     public static IVWHelper getInstance() {
         return Holder.INSTANCE;
@@ -52,15 +54,18 @@ public class IVWHelper implements Helper {
      */
     @Override
     public void start() {
-        AiRequest.Builder customBuilder = AiRequest.builder();
-        //key：数据标识 value： 唤醒词配置文件 index： 数据索引,用户可自定义设置
-        customBuilder.customText("key_word", AIKitSDK.getInstance().getWorkDir() + "/keyword.txt", 0);
-        int ret = AiHelper.getInst().loadData(ABILITYID, customBuilder.build());
-        if (ret != 0) {
-            Log.w(TAG, "加载自定义唤醒词失败! ret:" + ret);
-            return;
+        int ret = 0;
+        if (!isLoadData) {
+            AiRequest.Builder customBuilder = AiRequest.builder();
+            //key：数据标识 value： 唤醒词配置文件 index： 数据索引,用户可自定义设置
+            customBuilder.customText("key_word", AIKitSDK.getInstance().getWorkDir() + "/keyword.txt", 0);
+            ret = AiHelper.getInst().loadData(ABILITYID, customBuilder.build());
+            if (ret != 0) {
+                Log.w(TAG, "加载自定义唤醒词失败! ret:" + ret);
+                return;
+            }
         }
-        int[] indexs = {0};
+        int[] indexs = {index};
         ret = AiHelper.getInst().specifyDataSet(ABILITYID, "key_word", indexs);//从缓存中把个性化资源设置到引擎中
         if (ret != 0) {
             Log.w(TAG, "加载自定义唤醒词失败! ret:" + ret);
@@ -117,6 +122,12 @@ public class IVWHelper implements Helper {
         }
     }
 
+    @Override
+    public void unInit() {
+        unLoadData();
+        end();
+    }
+
     /**
      * 能力监听回调
      */
@@ -164,4 +175,20 @@ public class IVWHelper implements Helper {
             }
         }
     };
+
+    /**
+     * 卸载资源
+     */
+    private void unLoadData() {
+        int ret = 0;
+        if (isLoadData) {
+            ret = AiHelper.getInst().unLoadData(ABILITYID, "key_word", index);
+            if (ret != 0) {
+                Log.w(TAG, "卸载资源失败! ret:" + ret);
+            } else {
+                Log.i(TAG, "卸载资源成功! ret:" + ret);
+                isLoadData = false;
+            }
+        }
+    }
 }
